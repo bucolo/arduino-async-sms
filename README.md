@@ -1,6 +1,6 @@
 
 # arduino-async-sms
-Simple Arduino Async Library for sending sms using SIM800L
+Simple Arduino Async Library for sending sms using SIM800L and A6 AI-Thinker
 
 This is a library allowing sending and receiving SMS messages in asynchronous way.
 Is has its limitations but proved to be faster than when using fixed delays and allows your application to do anything else in the meantime.
