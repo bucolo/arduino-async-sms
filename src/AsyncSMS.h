@@ -21,7 +21,7 @@
 
 #define REGISTRATION_ERROR_CHECKS 5
 
-//#define ASYNC_SMS_DEBUG_MODE
+#define ASYNC_SMS_DEBUG_MODE
 
 class AsyncSMS
 {
@@ -88,13 +88,14 @@ private:
 	
 	bool checkFunctionResult(String toCheck);
 	bool isNewSMS();
+    bool isNewSMSa6();
 	bool isSMSSend();
 	bool isOK();
 	bool isError();
 	String getResultParameter(String cmd);
 	uint8_t parseResultValues(String res);
 	void handleCommandResponse();
-	void parseSMS();
+	void parseSMS(uint8_t a6);
 	void checkRegistrationState(uint8_t registrationEnabledState, uint8_t registrationState);
 	
 	void retrySMSSend();
