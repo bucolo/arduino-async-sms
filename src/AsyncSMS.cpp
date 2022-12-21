@@ -14,7 +14,8 @@ void AsyncSMS::init() {
 	while(!_gsm) {}
 	
 	reinitGSMModuleConnection();
-	#ifdef ASYNC_SMS_DEBUG_MODE
+	#ifdef ASYNC_SMS_DEBUG_MODE_old
+	
 	enqueue("AT+CPIN?");
 	enqueue("AT+GSN=?");
 	enqueue("AT+GSN");
@@ -27,7 +28,7 @@ void AsyncSMS::init() {
 
 void AsyncSMS::reinitGSMModuleConnection() {
 	_stateRefreshTimer.stop();
-	enqueue("AT");
+	enqueue("AT");	
 	enqueue("AT+CMGF=1");
 	enqueue("AT+CNMI=1,2,0,0,0");
 	enqueue("AT+CREG=1");
@@ -66,13 +67,13 @@ void AsyncSMS::process() {
 			String cmd = dequeue();
 			
 			#ifdef ASYNC_SMS_DEBUG_MODE
-			Serial.println("deque occurred");
+			Serial.println("dequeu occurred");
 			Serial.println(cmd);
 			Serial.println(_cmdQueueStart);
 			#endif
 			if (cmd == "SMS") {
 				_sendingStage = SMSSendingStageEnum::Starting;
-				_gsm->write("AT+CMGF=1\n");
+				_gsm->write("AT+CMGF=1\r");
 			} else {
 				_gsm->write(cmd.c_str());
 			}
@@ -103,8 +104,10 @@ void AsyncSMS::process() {
 		#ifdef ASYNC_SMS_DEBUG_MODE
 		Serial.println(_receivedMessageIndex);
 		for (uint16_t i = 0 ; i < _receivedMessageIndex ; i ++){
+			if (_receivedMessage[i]==10) Serial.print("10");
+			if (_receivedMessage[i]==13) Serial.print("13");
 			Serial.print(_receivedMessage[i]);
-			Serial.print(" ");
+			Serial.print("_");
 		}
 		Serial.println("");
 		#endif
@@ -120,7 +123,11 @@ void AsyncSMS::process() {
 		}
 		if (isNewSMS()) {
 			log("SMS received");
-			parseSMS();
+			parseSMS(0);
+		}
+	    if (isNewSMSa6()) {
+			log("SMS a6 received");
+			parseSMS(1);
 		}
 		clearSMSBuffer();
 	}
@@ -163,7 +170,7 @@ void AsyncSMS::processSMSSending() {
 			_waitingForResponse = true;
 			_sendingStage = SMSSendingStageEnum::Finishing;
 			_gsm->write((char)26);
-			_gsm->write('\n');
+			_gsm->write('\r');
 		} else {
 			retrySMSSend();
 		}
@@ -206,7 +213,7 @@ void AsyncSMS::handleCommandResponse() {
 		_state[2] = _resValues[0];
 		_state[3] = _resValues[1];
 	} else 
-		log("NIEZNNAE");
+		log("inconnu");
 }
 
 void AsyncSMS::checkRegistrationState(uint8_t registrationEnabledState, uint8_t registrationState) {
@@ -219,11 +226,14 @@ void AsyncSMS::checkRegistrationState(uint8_t registrationEnabledState, uint8_t 
 }
 
 void AsyncSMS::deleteAllSMS() {
-	enqueue("AT+CMGDA=DEL ALL");
+	_gsm->write("AT+CMGDA=DEL ALL\r");
 }
 
 bool AsyncSMS::isNewSMS() {
 	return checkFunctionResult("+CMT:");
+}
+bool AsyncSMS::isNewSMSa6() {
+	return checkFunctionResult("+CIEV:");
 }
 
 bool AsyncSMS::isSMSSend() {
@@ -247,6 +257,8 @@ bool AsyncSMS::checkFunctionResult(String toCheck) {
 	for (uint16_t i = index ; i < border; i++) {
 		tmp += _receivedMessage[i]; 
 	}
+	//Serial.print("temp=");
+	//Serial.println(tmp);
 	return tmp == toCheck;
 }
 
@@ -292,7 +304,7 @@ uint8_t AsyncSMS::parseResultValues(String res) {
 }
 
 void AsyncSMS::enqueue(String cmd) {
-	enqueueWithoutNewLine(cmd + "\n");
+	enqueueWithoutNewLine(cmd + "\r");
 }
 
 void AsyncSMS::enqueueWithoutNewLine(String cmd) {
@@ -319,9 +331,9 @@ void AsyncSMS::clearSMSBuffer() {
   _receivedMessageIndex = 0;
 }
 
-void AsyncSMS::parseSMS() {
+void AsyncSMS::parseSMS(uint8_t a6) {
 	char senderNumber[PHONE_NUMBER_LEN], message[RECEIVED_SMS_MAX_LENGTH], dt[20];
-	
+	uint8_t debut;
 	for (uint8_t i = 0; i < PHONE_NUMBER_LEN; i++) {
 		senderNumber[i] = 0;
 	}
@@ -330,7 +342,12 @@ void AsyncSMS::parseSMS() {
 	}
 	SMSParseStageEnum stage = SMSParseStageEnum::WaitingForNumber;
 	uint16_t index = 0;
-	for (uint16_t i = 0; i < _receivedMessageIndex - 2; i++) {
+	if (a6==1) {
+		debut=18;
+	} else {
+		debut=0;
+    }
+	for (uint16_t i = debut; i < _receivedMessageIndex - 2; i++) {
 		if (_receivedMessage[i] == '"') {
 			if (stage == SMSParseStageEnum::WaitingForNumber) {
 				stage = SMSParseStageEnum::ParsingNumber;
@@ -350,6 +367,9 @@ void AsyncSMS::parseSMS() {
 			}
 		} else if (_receivedMessage[i] == 13 && stage != SMSParseStageEnum::ParsingData) {
 			if (stage == SMSParseStageEnum::WaitingForData) {
+				stage = SMSParseStageEnum::WaitingForData2;
+			}
+			if (stage == SMSParseStageEnum::WaitingForDateTime && a6==1) {
 				stage = SMSParseStageEnum::WaitingForData2;
 			}
 		} else if (_receivedMessage[i] == 10 && stage != SMSParseStageEnum::ParsingData) {
