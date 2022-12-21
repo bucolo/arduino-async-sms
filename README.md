@@ -117,4 +117,9 @@ There are few know limitations that might be (or might not - depending on your w
 5. Library is using HardwareSerial
 6. Resulting from above, memory allocation for the library is quite large. Approximately 4x160 (outgoing queue) + 200 (incoming queue) + some memory reservation for cmd Queue ~160 chars which sum up to almost 1 kB. Of course it can be reduced by reducing above numbers in header file
 7. Library is used and developed using Arduino mega2560 and wasn't tested elsewhere
-8. Code is developed using SIM800L module
+8. Code is developed using SIM800L module (edited for A6)
+
+
+## Information for A6
+- for change rate : AT+IPR=57600
+- for save rate : AT&W
