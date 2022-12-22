@@ -21,7 +21,7 @@
 
 #define REGISTRATION_ERROR_CHECKS 5
 
-#define ASYNC_SMS_DEBUG_MODE
+//#define ASYNC_SMS_DEBUG_MODE
 
 class AsyncSMS
 {
