@@ -14,8 +14,7 @@ void AsyncSMS::init() {
 	while(!_gsm) {}
 	
 	reinitGSMModuleConnection();
-	#ifdef ASYNC_SMS_DEBUG_MODE_old
-	
+	#ifdef ASYNC_SMS_DEBUG_MODE
 	enqueue("AT+CPIN?");
 	enqueue("AT+GSN=?");
 	enqueue("AT+GSN");
@@ -104,8 +103,8 @@ void AsyncSMS::process() {
 		#ifdef ASYNC_SMS_DEBUG_MODE
 		Serial.println(_receivedMessageIndex);
 		for (uint16_t i = 0 ; i < _receivedMessageIndex ; i ++){
-			if (_receivedMessage[i]==10) Serial.print("10");
-			if (_receivedMessage[i]==13) Serial.print("13");
+			if (_receivedMessage[i]==10) Serial.print("LF");
+			if (_receivedMessage[i]==13) Serial.print("CR");
 			Serial.print(_receivedMessage[i]);
 			Serial.print("_");
 		}
@@ -162,18 +161,16 @@ void AsyncSMS::processSMSSending() {
 			_gsm->write(_smsSendQueue[_smsSendQueueBeginIndex].number);
 			_gsm->write("\"\r");
 			_gsm->write(_smsSendQueue[_smsSendQueueBeginIndex].message);
+			_gsm->write("\r");
 		} else {
 			retrySMSSend();
 		}
 	} else if (_sendingStage == SMSSendingStageEnum::SendingText) {
-		if (success) {
-			_waitingForResponse = true;
-			_sendingStage = SMSSendingStageEnum::Finishing;
-			_gsm->write((char)26);
-			_gsm->write('\r');
-		} else {
-			retrySMSSend();
-		}
+		_waitingForResponse = true;
+		_sendingStage = SMSSendingStageEnum::Finishing;
+		_gsm->write((char)26);
+
+		
 	} else if (_sendingStage == SMSSendingStageEnum::Finishing) {
 		if (isSMSSend()) {
 			_smsSendRetry = 0;
@@ -213,7 +210,7 @@ void AsyncSMS::handleCommandResponse() {
 		_state[2] = _resValues[0];
 		_state[3] = _resValues[1];
 	} else 
-		log("inconnu");
+		log("Unknow");
 }
 
 void AsyncSMS::checkRegistrationState(uint8_t registrationEnabledState, uint8_t registrationState) {
@@ -257,8 +254,7 @@ bool AsyncSMS::checkFunctionResult(String toCheck) {
 	for (uint16_t i = index ; i < border; i++) {
 		tmp += _receivedMessage[i]; 
 	}
-	//Serial.print("temp=");
-	//Serial.println(tmp);
+
 	return tmp == toCheck;
 }
 
