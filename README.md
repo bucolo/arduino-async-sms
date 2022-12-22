@@ -1,6 +1,6 @@
 
 # arduino-async-sms
-Simple Arduino Async Library for sending sms using SIM800L and A6 AI-Thinker
+Simple Arduino Async Library for sending sms using A6 AI-Thinker
 
 This is a library allowing sending and receiving SMS messages in asynchronous way.
 Is has its limitations but proved to be faster than when using fixed delays and allows your application to do anything else in the meantime.
@@ -117,7 +117,7 @@ There are few know limitations that might be (or might not - depending on your w
 5. Library is using HardwareSerial
 6. Resulting from above, memory allocation for the library is quite large. Approximately 4x160 (outgoing queue) + 200 (incoming queue) + some memory reservation for cmd Queue ~160 chars which sum up to almost 1 kB. Of course it can be reduced by reducing above numbers in header file
 7. Library is used and developed using Arduino mega2560 and wasn't tested elsewhere
-8. Code is developed using SIM800L module (edited for A6)
+8. Code is developed using A6 module
 
 
 ## Information for A6
